@@ -183,7 +183,34 @@ const api = {
     getAttributeDistribution: () => request.get('/hotel/dashboard/attributeDist'),
     getStatusDurationStats: () => request.get('/hotel/dashboard/statusDuration'),
 
-    uploadFile: (formData) => request.post('/file/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+    uploadFile: (formData) => request.post('/file/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+
+    getMaintenanceDashboard: () => request.get('/maintenance/order/dashboard'),
+    getMaintenanceOrderPage: (params) => request.get('/maintenance/order/page', { params }),
+    getMaintenanceOrder: (id) => request.get(`/maintenance/order/${id}`),
+    getMaintenanceOrdersByRoom: (roomId) => request.get(`/maintenance/order/room/${roomId}`),
+    getRoomMaintenanceStats: (roomId) => request.get(`/maintenance/order/room/${roomId}/stats`),
+    createMaintenanceOrder: (data) => request.post('/maintenance/order', data),
+    assignMaintenanceOrder: (id, data) => request.put(`/maintenance/order/${id}/assign`, data),
+    acceptMaintenanceOrder: (id) => request.put(`/maintenance/order/${id}/accept`),
+    addMaintenanceProgress: (id, data) => request.put(`/maintenance/order/${id}/progress`, data),
+    finishMaintenanceOrder: (id, data) => request.put(`/maintenance/order/${id}/finish`, data),
+    inspectMaintenanceOrder: (id, data) => request.put(`/maintenance/order/${id}/inspect`, data),
+    deleteMaintenanceOrder: (id) => request.delete(`/maintenance/order/${id}`),
+    exportMaintenanceOrders: (data) => request.post('/maintenance/order/export', data, { responseType: 'blob' }),
+
+    getChangeLogPage: (params) => request.get('/maintenance/changeLog/page', { params }),
+    getChangeLogsByRoom: (roomId) => request.get(`/maintenance/changeLog/room/${roomId}`),
+
+    getStatsOverview: () => request.get('/maintenance/statistics/overview'),
+    getStatsTopRooms: (limit) => request.get('/maintenance/statistics/topRooms', { params: { limit } }),
+    getStatsTypeDistribution: () => request.get('/maintenance/statistics/typeDistribution'),
+    getStatsCostTrend: (months) => request.get('/maintenance/statistics/costTrend', { params: { months } }),
+    getStatsDuration: () => request.get('/maintenance/statistics/durationStats'),
+    getStatsStaffWorkload: () => request.get('/maintenance/statistics/staffWorkload'),
+    exportMaintenanceStats: () => request.post('/maintenance/statistics/export', null, { responseType: 'blob' }),
+
+    getMaintenanceStaffList: () => request.get('/system/user/list', { params: { pageNum: 1, pageSize: 100, status: 1 } })
   }
 }
 

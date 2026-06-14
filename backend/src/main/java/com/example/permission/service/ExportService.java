@@ -1,5 +1,6 @@
 package com.example.permission.service;
 
+import com.example.permission.entity.MaintenanceOrder;
 import com.example.permission.entity.Room;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -195,6 +196,204 @@ public class ExportService {
         style.setBorderRight(BorderStyle.THIN);
         style.setAlignment(HorizontalAlignment.CENTER);
         return style;
+    }
+
+    public byte[] exportMaintenanceOrders(List<MaintenanceOrder> orders, String operatorName) {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("维护单数据");
+            CellStyle headerStyle = createHeaderStyle(workbook);
+            CellStyle infoStyle = createInfoStyle(workbook);
+
+            int rowIdx = 0;
+            Row infoRow1 = sheet.createRow(rowIdx++);
+            infoRow1.createCell(0).setCellValue("导出时间：" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            infoRow1.getCell(0).setCellStyle(infoStyle);
+            Row infoRow2 = sheet.createRow(rowIdx++);
+            infoRow2.createCell(0).setCellValue("导出人：" + operatorName);
+            infoRow2.getCell(0).setCellStyle(infoStyle);
+            rowIdx++;
+
+            Row headerRow = sheet.createRow(rowIdx++);
+            String[] headers = {"维护单号", "房间号", "维护类型", "优先级", "状态", "创建人", "创建时间",
+                    "分配人员", "接单时间", "实际用时(小时)", "维修费用(元)", "完成时间", "验收人", "验收结果"};
+            for (int i = 0; i < headers.length; i++) {
+                Cell c = headerRow.createCell(i);
+                c.setCellValue(headers[i]);
+                c.setCellStyle(headerStyle);
+            }
+
+            for (MaintenanceOrder order : orders) {
+                Row dataRow = sheet.createRow(rowIdx++);
+                int col = 0;
+                dataRow.createCell(col++).setCellValue(order.getOrderNo() != null ? order.getOrderNo() : "");
+                dataRow.createCell(col++).setCellValue(order.getRoomNumber() != null ? order.getRoomNumber() : "");
+                dataRow.createCell(col++).setCellValue(MaintenanceOrderService.getTypeText(order.getMaintenanceType()));
+                dataRow.createCell(col++).setCellValue(MaintenanceOrderService.getPriorityText(order.getPriority()));
+                dataRow.createCell(col++).setCellValue(MaintenanceOrderService.getStatusText(order.getStatus()));
+                dataRow.createCell(col++).setCellValue(order.getCreateUserName() != null ? order.getCreateUserName() : "");
+                dataRow.createCell(col++).setCellValue(order.getCreateTime() != null ? order.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "");
+                dataRow.createCell(col++).setCellValue(order.getAssignedUserName() != null ? order.getAssignedUserName() : "");
+                dataRow.createCell(col++).setCellValue(order.getAcceptTime() != null ? order.getAcceptTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "");
+                dataRow.createCell(col++).setCellValue(order.getActualHours() != null ? order.getActualHours().doubleValue() : 0);
+                dataRow.createCell(col++).setCellValue(order.getMaintenanceCost() != null ? order.getMaintenanceCost().doubleValue() : 0);
+                dataRow.createCell(col++).setCellValue(order.getFinishTime() != null ? order.getFinishTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "");
+                dataRow.createCell(col++).setCellValue(order.getInspectorName() != null ? order.getInspectorName() : "");
+                String inspectResult = "";
+                if (order.getInspectResult() != null) {
+                    inspectResult = order.getInspectResult() == 1 ? "通过" : "不通过";
+                }
+                dataRow.createCell(col).setCellValue(inspectResult);
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+                int width = sheet.getColumnWidth(i);
+                if (width < 3000) width = 3000;
+                if (width > 15000) width = 15000;
+                sheet.setColumnWidth(i, width);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("导出维护单Excel失败：" + e.getMessage(), e);
+        }
+    }
+
+    public byte[] exportMaintenanceStatistics(Map<String, Object> overview,
+                                                List<Map<String, Object>> topRooms,
+                                                Map<String, Object> typeDist,
+                                                List<Map<String, Object>> costTrend,
+                                                Map<String, Object> durationStats,
+                                                List<Map<String, Object>> staffWorkload,
+                                                String operatorName) {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            CellStyle headerStyle = createHeaderStyle(workbook);
+            CellStyle infoStyle = createInfoStyle(workbook);
+
+            int rowIdx;
+            Row infoRow;
+
+            Sheet sheet1 = workbook.createSheet("总体概览");
+            rowIdx = 0;
+            infoRow = sheet1.createRow(rowIdx++);
+            infoRow.createCell(0).setCellValue("导出时间：" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            infoRow.getCell(0).setCellStyle(infoStyle);
+            infoRow = sheet1.createRow(rowIdx++);
+            infoRow.createCell(0).setCellValue("导出人：" + operatorName);
+            infoRow.getCell(0).setCellStyle(infoStyle);
+            rowIdx++;
+            Row h1 = sheet1.createRow(rowIdx++);
+            h1.createCell(0).setCellValue("指标"); h1.getCell(0).setCellStyle(headerStyle);
+            h1.createCell(1).setCellValue("数值"); h1.getCell(1).setCellStyle(headerStyle);
+            String[][] overviewData = {
+                    {"维护单总数", String.valueOf(overview.get("totalOrders"))},
+                    {"待分配数", String.valueOf(overview.get("pendingCount"))},
+                    {"处理中数", String.valueOf(overview.get("processingCount"))},
+                    {"本月维护单数", String.valueOf(overview.get("monthOrderCount"))},
+                    {"本月费用(元)", String.valueOf(overview.get("monthCost"))},
+                    {"平均处理时长(小时)", String.valueOf(overview.get("avgHours"))}
+            };
+            for (String[] row : overviewData) {
+                Row r = sheet1.createRow(rowIdx++);
+                r.createCell(0).setCellValue(row[0]);
+                r.createCell(1).setCellValue(row[1]);
+            }
+            sheet1.autoSizeColumn(0); sheet1.autoSizeColumn(1);
+
+            Sheet sheet2 = workbook.createSheet("维修频率TOP10");
+            rowIdx = 0;
+            Row h2 = sheet2.createRow(rowIdx++);
+            String[] topHeaders = {"排名", "房间号", "维护次数", "累计费用(元)"};
+            for (int i = 0; i < topHeaders.length; i++) {
+                h2.createCell(i).setCellValue(topHeaders[i]);
+                h2.getCell(i).setCellStyle(headerStyle);
+            }
+            int rank = 1;
+            for (Map<String, Object> item : topRooms) {
+                Row r = sheet2.createRow(rowIdx++);
+                r.createCell(0).setCellValue(rank++);
+                r.createCell(1).setCellValue(item.get("roomNumber") != null ? item.get("roomNumber").toString() : "");
+                r.createCell(2).setCellValue(item.get("maintenanceCount") != null ? Integer.parseInt(item.get("maintenanceCount").toString()) : 0);
+                r.createCell(3).setCellValue(item.get("totalCost") != null ? Double.parseDouble(item.get("totalCost").toString()) : 0);
+            }
+            for (int i = 0; i < topHeaders.length; i++) sheet2.autoSizeColumn(i);
+
+            Sheet sheet3 = workbook.createSheet("维护类型分布");
+            rowIdx = 0;
+            Row h3 = sheet3.createRow(rowIdx++);
+            h3.createCell(0).setCellValue("维护类型"); h3.getCell(0).setCellStyle(headerStyle);
+            h3.createCell(1).setCellValue("数量"); h3.getCell(1).setCellStyle(headerStyle);
+            h3.createCell(2).setCellValue("占比"); h3.getCell(2).setCellStyle(headerStyle);
+            List<Map<String, Object>> typeList = (List<Map<String, Object>>) typeDist.get("list");
+            int total = typeDist.get("total") != null ? Integer.parseInt(typeDist.get("total").toString()) : 1;
+            for (Map<String, Object> item : typeList) {
+                Row r = sheet3.createRow(rowIdx++);
+                int count = Integer.parseInt(item.get("count").toString());
+                r.createCell(0).setCellValue(item.get("typeName") != null ? item.get("typeName").toString() : "");
+                r.createCell(1).setCellValue(count);
+                r.createCell(2).setCellValue(String.format("%.2f%%", total > 0 ? count * 100.0 / total : 0));
+            }
+            for (int i = 0; i < 3; i++) sheet3.autoSizeColumn(i);
+
+            Sheet sheet4 = workbook.createSheet("费用趋势(近6个月)");
+            rowIdx = 0;
+            Row h4 = sheet4.createRow(rowIdx++);
+            h4.createCell(0).setCellValue("月份"); h4.getCell(0).setCellStyle(headerStyle);
+            h4.createCell(1).setCellValue("费用(元)"); h4.getCell(1).setCellStyle(headerStyle);
+            h4.createCell(2).setCellValue("维护单数"); h4.getCell(2).setCellStyle(headerStyle);
+            for (Map<String, Object> item : costTrend) {
+                Row r = sheet4.createRow(rowIdx++);
+                r.createCell(0).setCellValue(item.get("month") != null ? item.get("month").toString() : "");
+                r.createCell(1).setCellValue(item.get("cost") != null ? Double.parseDouble(item.get("cost").toString()) : 0);
+                r.createCell(2).setCellValue(item.get("count") != null ? Integer.parseInt(item.get("count").toString()) : 0);
+            }
+            for (int i = 0; i < 3; i++) sheet4.autoSizeColumn(i);
+
+            Sheet sheet5 = workbook.createSheet("维修时长统计");
+            rowIdx = 0;
+            Row h5 = sheet5.createRow(rowIdx++);
+            h5.createCell(0).setCellValue("指标"); h5.getCell(0).setCellStyle(headerStyle);
+            h5.createCell(1).setCellValue("数值"); h5.getCell(1).setCellStyle(headerStyle);
+            String[][] durationData = {
+                    {"平均处理时长(分钟)", String.valueOf(durationStats.get("avgDurationMinutes"))},
+                    {"最长处理时长(分钟)", String.valueOf(durationStats.get("maxDurationMinutes"))},
+                    {"超时单数", String.valueOf(durationStats.get("timeoutCount"))},
+                    {"超时率", String.format("%.2f%%", Double.parseDouble(durationStats.get("timeoutRate").toString()) * 100)}
+            };
+            for (String[] row : durationData) {
+                Row r = sheet5.createRow(rowIdx++);
+                r.createCell(0).setCellValue(row[0]);
+                r.createCell(1).setCellValue(row[1]);
+            }
+            sheet5.autoSizeColumn(0); sheet5.autoSizeColumn(1);
+
+            Sheet sheet6 = workbook.createSheet("人员工作量统计");
+            rowIdx = 0;
+            Row h6 = sheet6.createRow(rowIdx++);
+            String[] staffHeaders = {"用户名", "姓名", "总工单数", "已完成", "平均工时(小时)", "验收通过率"};
+            for (int i = 0; i < staffHeaders.length; i++) {
+                h6.createCell(i).setCellValue(staffHeaders[i]);
+                h6.getCell(i).setCellStyle(headerStyle);
+            }
+            for (Map<String, Object> item : staffWorkload) {
+                Row r = sheet6.createRow(rowIdx++);
+                r.createCell(0).setCellValue(item.get("username") != null ? item.get("username").toString() : "");
+                r.createCell(1).setCellValue(item.get("nickname") != null ? item.get("nickname").toString() : "");
+                r.createCell(2).setCellValue(item.get("totalCount") != null ? Integer.parseInt(item.get("totalCount").toString()) : 0);
+                r.createCell(3).setCellValue(item.get("finishedCount") != null ? Integer.parseInt(item.get("finishedCount").toString()) : 0);
+                r.createCell(4).setCellValue(item.get("avgHours") != null ? Double.parseDouble(item.get("avgHours").toString()) : 0);
+                r.createCell(5).setCellValue(String.format("%.2f%%", Double.parseDouble(item.get("passRate").toString()) * 100));
+            }
+            for (int i = 0; i < staffHeaders.length; i++) sheet6.autoSizeColumn(i);
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("导出统计报表Excel失败：" + e.getMessage(), e);
+        }
     }
 
     private CellStyle createInfoStyle(Workbook workbook) {

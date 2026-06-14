@@ -87,6 +87,36 @@ const routes = [
         name: 'HotelDashboard',
         component: () => import('@/views/hotel/HotelDashboard.vue'),
         meta: { title: '统计看板', icon: 'DataAnalysis', permission: 'hotel:dashboard:list' }
+      },
+      {
+        path: 'maintenance/order',
+        name: 'MaintenanceOrderList',
+        component: () => import('@/views/maintenance/MaintenanceOrderList.vue'),
+        meta: { title: '维护单管理', icon: 'Document', permission: 'maintenance:order:list' }
+      },
+      {
+        path: 'maintenance/order/create',
+        name: 'MaintenanceOrderCreate',
+        component: () => import('@/views/maintenance/MaintenanceOrderCreate.vue'),
+        meta: { title: '创建维护单', icon: 'Edit', permission: 'maintenance:order:add' }
+      },
+      {
+        path: 'maintenance/order/:id',
+        name: 'MaintenanceOrderDetail',
+        component: () => import('@/views/maintenance/MaintenanceOrderDetail.vue'),
+        meta: { title: '维护单详情', icon: 'Document', permission: 'maintenance:order:query' }
+      },
+      {
+        path: 'maintenance/changeLog',
+        name: 'RoomChangeLog',
+        component: () => import('@/views/maintenance/RoomChangeLog.vue'),
+        meta: { title: '房间变更日志', icon: 'Clock', permission: 'maintenance:changeLog:list' }
+      },
+      {
+        path: 'maintenance/statistics',
+        name: 'MaintenanceStatistics',
+        component: () => import('@/views/maintenance/MaintenanceStatistics.vue'),
+        meta: { title: '维护统计报表', icon: 'DataLine', permission: 'maintenance:statistics:list' }
       }
     ]
   },

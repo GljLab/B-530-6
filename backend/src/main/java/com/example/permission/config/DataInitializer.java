@@ -55,7 +55,7 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
-        String[] testUsers = {"hotel_admin", "frontdesk_manager", "housekeeping_manager", "receptionist", "finance_staff"};
+        String[] testUsers = {"hotel_admin", "frontdesk_manager", "housekeeping_manager", "receptionist", "finance_staff", "housekeeper", "maintenance_manager", "maintenance_staff_a", "maintenance_staff_b"};
         for (String username : testUsers) {
             SysUser user = userMapper.selectByUsername(username);
             if (user != null) {

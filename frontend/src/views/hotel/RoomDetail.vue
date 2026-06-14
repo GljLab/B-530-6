@@ -26,73 +26,6 @@
       </div>
     </div>
 
-    <el-card v-if="roomData" shadow="never" class="info-card">
-      <template #header><span class="card-title">基本信息</span></template>
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="房号">
-          <span class="field-readonly">{{ roomData.roomNumber }}</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="楼栋">
-          <span class="field-readonly">{{ roomData.buildingName || '-' }}</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="楼层">
-          <span class="field-readonly">{{ roomData.floorName || '-' }}</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="房型">
-          <span class="field-readonly">{{ roomData.roomTypeName || '-' }}</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="朝向">{{ roomData.orientation || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="景观">{{ roomData.viewType || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="位置特点" :span="2">
-          <div v-if="parsedLocationFeatures.length" class="tag-list">
-            <el-tag v-for="f in parsedLocationFeatures" :key="f" size="small" type="info" class="round-tag">{{ f }}</el-tag>
-          </div>
-          <span v-else>-</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="特殊标识" :span="2">
-          <div v-if="parsedSpecialTags.length" class="tag-list">
-            <el-tag v-for="t in parsedSpecialTags" :key="t" size="small" type="warning" class="round-tag">{{ t }}</el-tag>
-          </div>
-          <span v-else>-</span>
-        </el-descriptions-item>
-      </el-descriptions>
-    </el-card>
-
-    <el-card v-if="roomTypeInfo" shadow="never" class="info-card">
-      <template #header><span class="card-title">房型信息</span></template>
-      <div v-if="roomTypeImages.length" class="image-gallery">
-        <el-carousel v-if="roomTypeImages.length > 1" height="200px" indicator-position="outside">
-          <el-carousel-item v-for="(img, idx) in roomTypeImages" :key="idx">
-            <img :src="img" class="gallery-image" />
-          </el-carousel-item>
-        </el-carousel>
-        <img v-else :src="roomTypeImages[0]" class="gallery-image single" />
-      </div>
-      <el-descriptions :column="2" border class="type-desc">
-        <el-descriptions-item label="面积">{{ roomTypeInfo.area }}m²</el-descriptions-item>
-        <el-descriptions-item label="床型">{{ bedTypeLabel(roomTypeInfo.bedType) }}</el-descriptions-item>
-        <el-descriptions-item label="最大入住">{{ roomTypeInfo.maxOccupancy }}人</el-descriptions-item>
-        <el-descriptions-item label="加床政策">{{ roomTypeInfo.extraBedPolicy || '-' }}</el-descriptions-item>
-      </el-descriptions>
-      <div v-if="parsedFacilities.length" class="facilities-section">
-        <span class="facilities-label">设施：</span>
-        <div class="tag-list">
-          <el-tag v-for="f in parsedFacilities" :key="f" size="small" class="round-tag">{{ f }}</el-tag>
-        </div>
-      </div>
-      <el-descriptions :column="2" border class="price-desc">
-        <el-descriptions-item label="基础价格">
-          <span class="price-text">¥{{ roomTypeInfo.basePrice }}/晚</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="周末价格">
-          <span class="price-text">¥{{ roomTypeInfo.weekendPrice }}/晚</span>
-        </el-descriptions-item>
-        <el-descriptions-item v-if="hasPermission('hotel:roomType:cost:view')" label="成本价格">
-          <span class="price-text cost">¥{{ roomTypeInfo.costPrice }}/晚</span>
-        </el-descriptions-item>
-      </el-descriptions>
-    </el-card>
-
     <el-card v-if="hasPermission('hotel:room:remark:view') || hasPermission('hotel:room:remark:edit')" shadow="never" class="info-card">
       <template #header>
         <div class="card-header-with-action">
@@ -106,25 +39,194 @@
       <span v-else class="remark-empty">暂无备注</span>
     </el-card>
 
-    <el-card shadow="never" class="info-card">
-      <template #header><span class="card-title">状态变更记录</span></template>
-      <el-timeline v-if="statusLogs.length">
-        <el-timeline-item
-          v-for="log in statusLogs"
-          :key="log.id"
-          :timestamp="log.createTime"
-          placement="top"
-        >
-          <div class="log-content">
-            <span class="log-operator">{{ log.operatorName || '系统' }}</span>
-            <el-tag :type="statusTagType(log.oldStatus)" size="small">{{ statusLabel(log.oldStatus) }}</el-tag>
-            <span class="log-arrow">→</span>
-            <el-tag :type="statusTagType(log.newStatus)" size="small">{{ statusLabel(log.newStatus) }}</el-tag>
-            <span v-if="log.remark" class="log-remark">{{ log.remark }}</span>
+    <el-card shadow="never" class="tabs-card">
+      <el-tabs v-model="activeTab">
+        <el-tab-pane label="基本信息" name="basic">
+          <el-descriptions :column="2" border v-if="roomData">
+            <el-descriptions-item label="房号">
+              <span class="field-readonly">{{ roomData.roomNumber }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="楼栋">
+              <span class="field-readonly">{{ roomData.buildingName || '-' }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="楼层">
+              <span class="field-readonly">{{ roomData.floorName || '-' }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="房型">
+              <span class="field-readonly">{{ roomData.roomTypeName || '-' }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="朝向">{{ roomData.orientation || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="景观">{{ roomData.viewType || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="位置特点" :span="2">
+              <div v-if="parsedLocationFeatures.length" class="tag-list">
+                <el-tag v-for="f in parsedLocationFeatures" :key="f" size="small" type="info" class="round-tag">{{ f }}</el-tag>
+              </div>
+              <span v-else>-</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="特殊标识" :span="2">
+              <div v-if="parsedSpecialTags.length" class="tag-list">
+                <el-tag v-for="t in parsedSpecialTags" :key="t" size="small" type="warning" class="round-tag">{{ t }}</el-tag>
+              </div>
+              <span v-else>-</span>
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-tab-pane>
+
+        <el-tab-pane label="房型信息" name="type">
+          <div v-if="roomTypeImages.length" class="image-gallery">
+            <el-carousel v-if="roomTypeImages.length > 1" height="200px" indicator-position="outside">
+              <el-carousel-item v-for="(img, idx) in roomTypeImages" :key="idx">
+                <img :src="img" class="gallery-image" />
+              </el-carousel-item>
+            </el-carousel>
+            <img v-else :src="roomTypeImages[0]" class="gallery-image single" />
           </div>
-        </el-timeline-item>
-      </el-timeline>
-      <el-empty v-else description="暂无状态变更记录" :image-size="80" />
+          <el-descriptions :column="2" border class="type-desc" v-if="roomTypeInfo">
+            <el-descriptions-item label="面积">{{ roomTypeInfo.area }}m²</el-descriptions-item>
+            <el-descriptions-item label="床型">{{ bedTypeLabel(roomTypeInfo.bedType) }}</el-descriptions-item>
+            <el-descriptions-item label="最大入住">{{ roomTypeInfo.maxOccupancy }}人</el-descriptions-item>
+            <el-descriptions-item label="加床政策">{{ roomTypeInfo.extraBedPolicy || '-' }}</el-descriptions-item>
+          </el-descriptions>
+          <div v-if="parsedFacilities.length" class="facilities-section">
+            <span class="facilities-label">设施：</span>
+            <div class="tag-list">
+              <el-tag v-for="f in parsedFacilities" :key="f" size="small" class="round-tag">{{ f }}</el-tag>
+            </div>
+          </div>
+          <el-descriptions :column="2" border class="price-desc" v-if="roomTypeInfo">
+            <el-descriptions-item label="基础价格">
+              <span class="price-text">¥{{ roomTypeInfo.basePrice }}/晚</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="周末价格">
+              <span class="price-text">¥{{ roomTypeInfo.weekendPrice }}/晚</span>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="hasPermission('hotel:roomType:cost:view')" label="成本价格">
+              <span class="price-text cost">¥{{ roomTypeInfo.costPrice }}/晚</span>
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-tab-pane>
+
+        <el-tab-pane label="状态变更记录" name="status">
+          <el-timeline v-if="statusLogs.length">
+            <el-timeline-item
+              v-for="log in statusLogs"
+              :key="log.id"
+              :timestamp="log.createTime"
+              placement="top"
+            >
+              <div class="log-content">
+                <span class="log-operator">{{ log.operatorName || '系统' }}</span>
+                <el-tag :type="statusTagType(log.oldStatus)" size="small">{{ statusLabel(log.oldStatus) }}</el-tag>
+                <span class="log-arrow">→</span>
+                <el-tag :type="statusTagType(log.newStatus)" size="small">{{ statusLabel(log.newStatus) }}</el-tag>
+                <span v-if="log.remark" class="log-remark">{{ log.remark }}</span>
+              </div>
+            </el-timeline-item>
+          </el-timeline>
+          <el-empty v-else description="暂无状态变更记录" :image-size="80" />
+        </el-tab-pane>
+
+        <el-tab-pane label="维护记录" name="maintenance">
+          <div v-if="roomMaintenanceStats" class="maintenance-stats">
+            <el-row :gutter="16">
+              <el-col :span="6">
+                <div class="stat-block">
+                  <div class="stat-val">{{ roomMaintenanceStats.totalCount || 0 }}</div>
+                  <div class="stat-lab">维护次数</div>
+                </div>
+              </el-col>
+              <el-col :span="6">
+                <div class="stat-block">
+                  <div class="stat-val">¥{{ roomMaintenanceStats.totalCost || 0 }}</div>
+                  <div class="stat-lab">累计费用</div>
+                </div>
+              </el-col>
+              <el-col :span="6">
+                <div class="stat-block">
+                  <div class="stat-val">{{ roomMaintenanceStats.lastMaintainTime || '-' }}</div>
+                  <div class="stat-lab">最近维护时间</div>
+                </div>
+              </el-col>
+              <el-col :span="6">
+                <div class="stat-block">
+                  <div class="stat-val">{{ roomMaintenanceStats.avgCycleDays || 0 }}天</div>
+                  <div class="stat-lab">平均维护周期</div>
+                </div>
+              </el-col>
+            </el-row>
+          </div>
+          <div v-if="hasPermission('maintenance:order:add')" class="mt-16">
+            <el-button type="primary" @click="goCreateOrder">
+              <el-icon><Plus /></el-icon>创建维护单
+            </el-button>
+          </div>
+          <el-table :data="roomMaintenanceList" v-loading="maintenanceLoading" class="mt-16" stripe>
+            <el-table-column prop="orderNo" label="维护单号" width="160">
+              <template #default="{ row }">
+                <el-link type="primary" @click="router.push(`/maintenance/order/${row.id}`)">{{ row.orderNo }}</el-link>
+              </template>
+            </el-table-column>
+            <el-table-column prop="maintenanceType" label="维护类型" width="110">
+              <template #default="{ row }">{{ maintenanceTypeLabel(row.maintenanceType) }}</template>
+            </el-table-column>
+            <el-table-column prop="priority" label="优先级" width="80">
+              <template #default="{ row }">
+                <el-tag :type="priorityTagType(row.priority)" size="small">{{ priorityLabel(row.priority) }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="mStatusTagType(row.status)" size="small">{{ mStatusLabel(row.status) }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="problemDescription" label="问题描述" show-overflow-tooltip />
+            <el-table-column prop="maintenanceCost" label="费用(元)" width="100">
+              <template #default="{ row }">{{ row.maintenanceCost || '-' }}</template>
+            </el-table-column>
+            <el-table-column prop="createTime" label="创建时间" width="160" />
+          </el-table>
+          <el-empty v-if="!maintenanceLoading && roomMaintenanceList.length === 0" description="暂无维护记录" :image-size="80" />
+        </el-tab-pane>
+
+        <el-tab-pane label="变更日志" name="changeLog">
+          <el-timeline v-if="changeLogs.length">
+            <el-timeline-item
+              v-for="log in changeLogs"
+              :key="log.id"
+              :timestamp="log.changeTime"
+              :type="changeLogTagType(log.operationType)"
+              placement="top"
+              hollow
+            >
+              <div class="change-log-content">
+                <div class="change-log-header">
+                  <span class="log-operator">{{ log.operatorName || '系统' }}</span>
+                  <el-tag size="small" :type="changeLogTagType(log.operationType)">{{ changeLogTypeLabel(log.operationType) }}</el-tag>
+                  <span class="log-field" v-if="log.fieldName">{{ log.fieldName }}</span>
+                  <el-link
+                    v-if="log.relatedOrderNo"
+                    type="primary"
+                    :underline="false"
+                    size="small"
+                    @click="router.push(`/maintenance/order/${log.relatedOrderId}`)"
+                  >
+                    查看维护单: {{ log.relatedOrderNo }}
+                  </el-link>
+                </div>
+                <div class="change-log-body" v-if="log.oldValue || log.newValue">
+                  <span v-if="log.oldValue" class="old-val">{{ log.oldValue }}</span>
+                  <span class="log-arrow" v-if="log.oldValue && log.newValue">→</span>
+                  <span v-if="log.newValue" class="new-val">{{ log.newValue }}</span>
+                </div>
+                <div class="change-log-reason" v-if="log.changeReason">
+                  原因：{{ log.changeReason }}
+                </div>
+              </div>
+            </el-timeline-item>
+          </el-timeline>
+          <el-empty v-else description="暂无变更日志" :image-size="80" />
+        </el-tab-pane>
+      </el-tabs>
     </el-card>
 
     <el-dialog
@@ -287,7 +389,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, Edit, Delete, Switch, CopyDocument } from '@element-plus/icons-vue'
+import { ArrowLeft, Edit, Delete, Switch, CopyDocument, Plus } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import api from '@/api'
 
@@ -337,9 +439,47 @@ const parseJsonArray = (val) => {
   }
 }
 
+const activeTab = ref('basic')
 const roomData = ref(null)
 const statusLogs = ref([])
+const roomMaintenanceList = ref([])
+const roomMaintenanceStats = ref(null)
+const maintenanceLoading = ref(false)
+const changeLogs = ref([])
 const pageLoading = ref(false)
+
+const maintenanceTypeLabel = (t) => {
+  const map = { 1: '设施维修', 2: '定期保养', 3: '深度清洁', 4: '设备更换', 5: '装修改造' }
+  return map[t] || '-'
+}
+const priorityLabel = (p) => {
+  const map = { 1: '紧急', 2: '高', 3: '中', 4: '低' }
+  return map[p] || '-'
+}
+const priorityTagType = (p) => {
+  const map = { 1: 'danger', 2: 'warning', 3: 'primary', 4: 'info' }
+  return map[p] || 'info'
+}
+const mStatusLabel = (s) => {
+  const map = { 1: '待分配', 2: '处理中', 3: '已完成', 4: '已验收', 5: '已关闭' }
+  return map[s] || '-'
+}
+const mStatusTagType = (s) => {
+  const map = { 1: 'info', 2: 'warning', 3: 'primary', 4: 'success', 5: '' }
+  return map[s] || ''
+}
+const changeLogTypeLabel = (t) => {
+  const map = { 1: '创建', 2: '修改', 3: '状态变更', 4: '删除', 5: '维护单关联' }
+  return map[t] || '-'
+}
+const changeLogTagType = (t) => {
+  const map = { 1: 'success', 2: 'warning', 3: 'primary', 4: 'danger', 5: 'info' }
+  return map[t] || 'info'
+}
+
+const goCreateOrder = () => {
+  router.push({ path: '/maintenance/order/create', query: { roomId: roomData.value?.id } })
+}
 
 const roomTypeInfo = computed(() => roomData.value?.roomType || null)
 
@@ -381,6 +521,40 @@ const loadStatusLogs = async () => {
     }
   } catch {
     statusLogs.value = []
+  }
+}
+
+const loadRoomMaintenance = async () => {
+  maintenanceLoading.value = true
+  try {
+    const id = route.params.id
+    const [listRes, statsRes] = await Promise.all([
+      api.hotel.getMaintenanceOrdersByRoom(id),
+      api.hotel.getRoomMaintenanceStats(id)
+    ])
+    if (listRes.code === 200) {
+      roomMaintenanceList.value = listRes.data || []
+    }
+    if (statsRes.code === 200) {
+      roomMaintenanceStats.value = statsRes.data || null
+    }
+  } catch {
+    roomMaintenanceList.value = []
+    roomMaintenanceStats.value = null
+  } finally {
+    maintenanceLoading.value = false
+  }
+}
+
+const loadChangeLogs = async () => {
+  try {
+    const id = route.params.id
+    const res = await api.hotel.getChangeLogsByRoom(id)
+    if (res.code === 200) {
+      changeLogs.value = res.data || []
+    }
+  } catch {
+    changeLogs.value = []
   }
 }
 
@@ -615,6 +789,8 @@ const handleCopyRoom = async () => {
 onMounted(() => {
   loadRoom()
   loadStatusLogs()
+  loadRoomMaintenance()
+  loadChangeLogs()
 })
 </script>
 
@@ -770,5 +946,90 @@ onMounted(() => {
 .copy-source-card {
   border-radius: 12px;
   border: none;
+}
+
+.tabs-card {
+  border-radius: 12px;
+  border: none;
+  margin-bottom: 16px;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+.maintenance-stats {
+  margin-bottom: 8px;
+}
+
+.stat-block {
+  text-align: center;
+  padding: 16px 8px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
+  border-radius: 10px;
+}
+
+.stat-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 4px;
+}
+
+.stat-lab {
+  font-size: 13px;
+  color: #718096;
+}
+
+.change-log-content {
+  line-height: 1.8;
+}
+
+.change-log-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.log-field {
+  font-size: 13px;
+  color: #4a5568;
+  background: #edf2f7;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.change-log-body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.old-val {
+  color: #f56c6c;
+  text-decoration: line-through;
+  font-size: 13px;
+  background: #fef0f0;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.new-val {
+  color: #67c23a;
+  font-size: 13px;
+  font-weight: 600;
+  background: #f0f9eb;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.change-log-reason {
+  font-size: 13px;
+  color: #718096;
+  margin-top: 4px;
+  font-style: italic;
 }
 </style>

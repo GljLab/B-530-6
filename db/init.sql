@@ -487,3 +487,234 @@ INSERT INTO sys_data_permission (role_id, scope_type, custom_dept_ids) VALUES
 -- =============================================
 INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 (4, 153);
+
+-- =============================================
+-- 房间变更日志表（完整记录所有房间变更）
+-- =============================================
+CREATE TABLE IF NOT EXISTS room_change_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',
+    room_id BIGINT NOT NULL COMMENT '房间ID',
+    room_number VARCHAR(20) NOT NULL COMMENT '房间号',
+    operator VARCHAR(50) COMMENT '操作人账号',
+    operator_id BIGINT COMMENT '操作人ID',
+    operator_name VARCHAR(50) COMMENT '操作人姓名',
+    operator_role VARCHAR(50) COMMENT '操作人角色',
+    operation_type TINYINT NOT NULL COMMENT '操作类型：1-创建，2-修改，3-状态变更，4-删除，5-维护单关联',
+    change_field VARCHAR(100) COMMENT '变更字段',
+    old_value TEXT COMMENT '原值',
+    new_value TEXT COMMENT '新值',
+    change_reason VARCHAR(500) COMMENT '变更原因',
+    related_order_no VARCHAR(50) COMMENT '关联维护单号',
+    terminal_type VARCHAR(20) DEFAULT 'PC' COMMENT '操作终端：PC端/移动端',
+    terminal_ip VARCHAR(50) COMMENT '操作终端IP',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '变更时间',
+    INDEX idx_room_id (room_id),
+    INDEX idx_operator_id (operator_id),
+    INDEX idx_create_time (create_time),
+    INDEX idx_operation_type (operation_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='房间变更日志表';
+
+-- =============================================
+-- 维护单表
+-- =============================================
+CREATE TABLE IF NOT EXISTS maintenance_order (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '维护单ID',
+    order_no VARCHAR(50) NOT NULL UNIQUE COMMENT '维护单号：WH+年月日+流水号',
+    room_id BIGINT NOT NULL COMMENT '房间ID',
+    room_number VARCHAR(20) NOT NULL COMMENT '房间号',
+    maintenance_type TINYINT NOT NULL COMMENT '维护类型：1-设施维修，2-定期保养，3-深度清洁，4-设备更换，5-装修改造',
+    priority TINYINT NOT NULL COMMENT '优先级：1-紧急，2-高，3-中，4-低',
+    problem_description TEXT NOT NULL COMMENT '问题描述',
+    expected_finish_time DATETIME COMMENT '预计完成时间',
+    special_remark VARCHAR(500) COMMENT '特殊说明',
+    status TINYINT DEFAULT 1 NOT NULL COMMENT '状态：1-待分配，2-处理中，3-已完成，4-已验收，5-已关闭',
+    assigned_user_id BIGINT COMMENT '分配的维修人员ID',
+    assigned_user_name VARCHAR(50) COMMENT '分配的维修人员姓名',
+    assign_time DATETIME COMMENT '分配时间',
+    accept_time DATETIME COMMENT '接单时间',
+    actual_hours DECIMAL(8,2) COMMENT '实际用时（小时）',
+    used_parts TEXT COMMENT '使用的配件及数量',
+    maintenance_cost DECIMAL(10,2) DEFAULT 0 COMMENT '维修费用（元）',
+    maintenance_description TEXT COMMENT '维护说明',
+    finish_time DATETIME COMMENT '完成时间',
+    inspector_id BIGINT COMMENT '验收人ID',
+    inspector_name VARCHAR(50) COMMENT '验收人姓名',
+    inspect_time DATETIME COMMENT '验收时间',
+    inspect_result TINYINT COMMENT '验收结果：1-通过，2-不通过',
+    inspect_opinion TEXT COMMENT '验收意见',
+    rectification_requirement TEXT COMMENT '整改要求（不通过时填写）',
+    create_user_id BIGINT NOT NULL COMMENT '创建人ID',
+    create_user_name VARCHAR(50) NOT NULL COMMENT '创建人姓名',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted TINYINT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
+    INDEX idx_room_id (room_id),
+    INDEX idx_status (status),
+    INDEX idx_maintenance_type (maintenance_type),
+    INDEX idx_priority (priority),
+    INDEX idx_assigned_user_id (assigned_user_id),
+    INDEX idx_create_time (create_time),
+    INDEX idx_order_no (order_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='维护单表';
+
+-- =============================================
+-- 维护单照片表
+-- =============================================
+CREATE TABLE IF NOT EXISTS maintenance_photo (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '照片ID',
+    order_id BIGINT NOT NULL COMMENT '维护单ID',
+    photo_type TINYINT NOT NULL COMMENT '照片类型：1-问题照片，2-维护后照片',
+    photo_url VARCHAR(500) NOT NULL COMMENT '照片URL',
+    sort_order INT DEFAULT 0 COMMENT '排序',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_order_id (order_id),
+    INDEX idx_photo_type (photo_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='维护单照片表';
+
+-- =============================================
+-- 维护单状态流转日志表
+-- =============================================
+CREATE TABLE IF NOT EXISTS maintenance_status_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '日志ID',
+    order_id BIGINT NOT NULL COMMENT '维护单ID',
+    order_no VARCHAR(50) NOT NULL COMMENT '维护单号',
+    old_status TINYINT COMMENT '原状态',
+    new_status TINYINT NOT NULL COMMENT '新状态',
+    operator_id BIGINT COMMENT '操作人ID',
+    operator_name VARCHAR(50) COMMENT '操作人姓名',
+    remark VARCHAR(500) COMMENT '备注说明',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
+    INDEX idx_order_id (order_id),
+    INDEX idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='维护单状态流转日志表';
+
+-- =============================================
+-- 新增角色：维修部主管、维修人员
+-- =============================================
+INSERT INTO sys_role (id, role_name, role_key, order_num, status, remark) VALUES
+(9, '维修部主管', 'maintenance_manager', 9, 1, '维修部主管，可分配维护单、查看统计'),
+(10, '维修人员', 'maintenance_staff', 10, 1, '维修人员，处理分配给自己的维护单');
+
+-- =============================================
+-- 新增测试用户
+-- =============================================
+INSERT INTO sys_user (id, username, password, nickname, email, phone, status) VALUES
+(9, 'maintenance_manager', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iKtE/ETXmB5nNiHxqHnHfgVd5GK6', '维修部主管', 'maintenance_mgr@example.com', '13800138008', 1),
+(10, 'maintenance_staff_a', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iKtE/ETXmB5nNiHxqHnHfgVd5GK6', '维修人员A', 'maintenance_a@example.com', '13800138009', 1),
+(11, 'maintenance_staff_b', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iKtE/ETXmB5nNiHxqHnHfgVd5GK6', '维修人员B', 'maintenance_b@example.com', '13800138010', 1);
+
+INSERT INTO sys_user_role (user_id, role_id) VALUES
+(9, 9),
+(10, 10),
+(11, 10);
+
+INSERT INTO sys_data_permission (role_id, scope_type, custom_dept_ids) VALUES
+(9, 1, NULL),
+(10, 1, NULL);
+
+-- =============================================
+-- 维护管理菜单 (ID range: 200-299)
+-- =============================================
+INSERT INTO sys_menu (id, menu_name, parent_id, order_num, path, component, perms, menu_type, visible, status, icon) VALUES
+(200, '维护管理', 0, 3, '/maintenance', NULL, NULL, 0, 1, 1, 'Tools'),
+(201, '维护单管理', 200, 1, '/maintenance/order', 'maintenance/MaintenanceOrderList', 'maintenance:order:list', 1, 1, 1, 'Document'),
+(202, '创建维护单', 200, 2, '/maintenance/order/create', 'maintenance/MaintenanceOrderCreate', 'maintenance:order:add', 1, 1, 1, 'Edit'),
+(203, '房间变更日志', 200, 3, '/maintenance/changeLog', 'maintenance/RoomChangeLog', 'maintenance:changeLog:list', 1, 1, 1, 'Clock'),
+(204, '维护统计报表', 200, 4, '/maintenance/statistics', 'maintenance/MaintenanceStatistics', 'maintenance:statistics:list', 1, 1, 1, 'DataLine');
+
+-- 维护单按钮权限
+INSERT INTO sys_menu (id, menu_name, parent_id, order_num, path, component, perms, menu_type, visible, status, icon) VALUES
+(211, '维护单查询', 201, 1, '', NULL, 'maintenance:order:query', 2, 1, 1, NULL),
+(212, '维护单新增', 201, 2, '', NULL, 'maintenance:order:add', 2, 1, 1, NULL),
+(213, '维护单编辑', 201, 3, '', NULL, 'maintenance:order:edit', 2, 1, 1, NULL),
+(214, '维护单删除', 201, 4, '', NULL, 'maintenance:order:delete', 2, 1, 1, NULL),
+(215, '维护单分配', 201, 5, '', NULL, 'maintenance:order:assign', 2, 1, 1, NULL),
+(216, '维护单接单', 201, 6, '', NULL, 'maintenance:order:accept', 2, 1, 1, NULL),
+(217, '维护单提交完成', 201, 7, '', NULL, 'maintenance:order:finish', 2, 1, 1, NULL),
+(218, '维护单验收', 201, 8, '', NULL, 'maintenance:order:inspect', 2, 1, 1, NULL),
+(219, '维护费用查看', 201, 9, '', NULL, 'maintenance:order:cost:view', 2, 1, 1, NULL),
+(220, '维护单导出', 201, 10, '', NULL, 'maintenance:order:export', 2, 1, 1, NULL);
+
+-- 变更日志按钮权限
+INSERT INTO sys_menu (id, menu_name, parent_id, order_num, path, component, perms, menu_type, visible, status, icon) VALUES
+(231, '变更日志查询', 203, 1, '', NULL, 'maintenance:changeLog:query', 2, 1, 1, NULL);
+
+-- 统计报表按钮权限
+INSERT INTO sys_menu (id, menu_name, parent_id, order_num, path, component, perms, menu_type, visible, status, icon) VALUES
+(241, '统计查询', 204, 1, '', NULL, 'maintenance:statistics:query', 2, 1, 1, NULL),
+(242, '统计导出', 204, 2, '', NULL, 'maintenance:statistics:export', 2, 1, 1, NULL);
+
+-- =============================================
+-- 超级管理员：维护管理所有权限
+-- =============================================
+INSERT INTO sys_role_menu (role_id, menu_id) VALUES
+(1, 200), (1, 201), (1, 202), (1, 203), (1, 204),
+(1, 211), (1, 212), (1, 213), (1, 214), (1, 215), (1, 216), (1, 217), (1, 218), (1, 219), (1, 220),
+(1, 231),
+(1, 241), (1, 242);
+
+-- =============================================
+-- 酒店管理员(hotel_admin)：维护管理所有权限（不含系统管理）
+-- =============================================
+INSERT INTO sys_role_menu (role_id, menu_id) VALUES
+(3, 200), (3, 201), (3, 202), (3, 203), (3, 204),
+(3, 211), (3, 212), (3, 213), (3, 214), (3, 215), (3, 216), (3, 217), (3, 218), (3, 219), (3, 220),
+(3, 231),
+(3, 241), (3, 242);
+
+-- =============================================
+-- 客房部经理(housekeeping_manager)：
+-- 可创建维护单、验收、查看日志和统计
+-- =============================================
+INSERT INTO sys_role_menu (role_id, menu_id) VALUES
+(5, 200), (5, 201), (5, 202), (5, 203), (5, 204),
+(5, 211), (5, 212), (5, 218), (5, 219),
+(5, 231),
+(5, 241);
+
+-- =============================================
+-- 前厅部经理(frontdesk_manager)：
+-- 可查看维护单、查看日志
+-- =============================================
+INSERT INTO sys_role_menu (role_id, menu_id) VALUES
+(4, 200), (4, 201), (4, 203),
+(4, 211), (4, 212),
+(4, 231);
+
+-- =============================================
+-- 维修部主管(maintenance_manager)：
+-- 可查看所有维护单、分配、查看统计
+-- 不能验收
+-- =============================================
+INSERT INTO sys_role_menu (role_id, menu_id) VALUES
+(9, 200), (9, 201), (9, 203), (9, 204),
+(9, 211), (9, 215), (9, 219),
+(9, 231),
+(9, 241);
+
+-- =============================================
+-- 维修人员(maintenance_staff)：
+-- 只能查看分配给自己的维护单、接单、提交完成
+-- 查看自己的统计
+-- =============================================
+INSERT INTO sys_role_menu (role_id, menu_id) VALUES
+(10, 200), (10, 201),
+(10, 211), (10, 216), (10, 217);
+
+-- =============================================
+-- 普通前台(receptionist)：
+-- 可查看维护单（只读）、查看房间维护历史
+-- 看不到维修费用
+-- =============================================
+INSERT INTO sys_role_menu (role_id, menu_id) VALUES
+(6, 200), (6, 201),
+(6, 211);
+
+-- =============================================
+-- 财务人员(finance_staff)：
+-- 可查看维护单、费用、统计导出
+-- =============================================
+INSERT INTO sys_role_menu (role_id, menu_id) VALUES
+(7, 200), (7, 201), (7, 204),
+(7, 211), (7, 219), (7, 220),
+(7, 241), (7, 242);
