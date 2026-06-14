@@ -22,6 +22,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -121,8 +123,10 @@ public class MaintenanceOrderController {
         order.setMaintenanceType(Integer.valueOf(params.get("maintenanceType").toString()));
         order.setPriority(Integer.valueOf(params.get("priority").toString()));
         order.setProblemDescription(params.get("problemDescription") != null ? params.get("problemDescription").toString() : "");
-        if (params.get("expectedFinishTime") != null) {
-            order.setExpectedFinishTime(java.time.LocalDateTime.parse(params.get("expectedFinishTime").toString()));
+        if (params.get("expectedFinishTime") != null && !params.get("expectedFinishTime").toString().isEmpty()) {
+            String dateTimeStr = params.get("expectedFinishTime").toString();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            order.setExpectedFinishTime(LocalDateTime.parse(dateTimeStr, formatter));
         }
         order.setSpecialRemark(params.get("specialRemark") != null ? params.get("specialRemark").toString() : null);
 

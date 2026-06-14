@@ -78,6 +78,33 @@
             <span>统计看板</span>
           </el-menu-item>
         </el-sub-menu>
+
+        <el-sub-menu index="/maintenance" v-if="hasMaintenancePermission">
+          <template #title>
+            <el-icon><Tools /></el-icon>
+            <span>维护管理</span>
+          </template>
+
+          <el-menu-item index="/maintenance/order" v-if="hasPermission('maintenance:order:list')">
+            <el-icon><Document /></el-icon>
+            <span>维护单管理</span>
+          </el-menu-item>
+
+          <el-menu-item index="/maintenance/order/create" v-if="hasPermission('maintenance:order:add')">
+            <el-icon><Edit /></el-icon>
+            <span>创建维护单</span>
+          </el-menu-item>
+
+          <el-menu-item index="/maintenance/changeLog" v-if="hasPermission('maintenance:changeLog:list')">
+            <el-icon><Clock /></el-icon>
+            <span>房间变更日志</span>
+          </el-menu-item>
+
+          <el-menu-item index="/maintenance/statistics" v-if="hasPermission('maintenance:statistics:list')">
+            <el-icon><DataLine /></el-icon>
+            <span>维护统计报表</span>
+          </el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
     
@@ -141,7 +168,8 @@ import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   HomeFilled, Setting, User, Avatar, Menu, Lock,
   Expand, Fold, ArrowDown, SwitchButton,
-  House, OfficeBuilding, School, Tickets, Key, DataAnalysis
+  House, OfficeBuilding, School, Tickets, Key, DataAnalysis,
+  Tools, Document, Edit, Clock, DataLine
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -169,6 +197,13 @@ const hasHotelPermission = computed(() => {
          hasPermission('hotel:roomType:list') ||
          hasPermission('hotel:room:list') ||
          hasPermission('hotel:dashboard:list')
+})
+
+const hasMaintenancePermission = computed(() => {
+  return hasPermission('maintenance:order:list') ||
+         hasPermission('maintenance:order:add') ||
+         hasPermission('maintenance:changeLog:list') ||
+         hasPermission('maintenance:statistics:list')
 })
 
 const toggleCollapse = () => {
