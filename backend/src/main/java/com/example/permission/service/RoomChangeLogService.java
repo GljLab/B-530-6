@@ -27,7 +27,8 @@ public class RoomChangeLogService {
 
     public void logRoomChange(Long roomId, Integer operationType, String changeField,
                               String oldValue, String newValue, String changeReason,
-                              String relatedOrderNo, Long operatorId, String operatorName,
+                              String relatedOrderNo, Long relatedOrderId,
+                              Long operatorId, String operatorName,
                               String operator, String operatorRole, String terminalIp) {
         Room room = roomMapper.selectOneById(roomId);
         if (room == null) return;
@@ -41,6 +42,7 @@ public class RoomChangeLogService {
         log.setNewValue(newValue);
         log.setChangeReason(changeReason);
         log.setRelatedOrderNo(relatedOrderNo);
+        log.setRelatedOrderId(relatedOrderId);
         log.setOperatorId(operatorId);
         log.setOperatorName(operatorName);
         log.setOperator(operator);

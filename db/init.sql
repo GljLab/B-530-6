@@ -505,6 +505,7 @@ CREATE TABLE IF NOT EXISTS room_change_log (
     new_value TEXT COMMENT '新值',
     change_reason VARCHAR(500) COMMENT '变更原因',
     related_order_no VARCHAR(50) COMMENT '关联维护单号',
+    related_order_id BIGINT COMMENT '关联维护单ID',
     terminal_type VARCHAR(20) DEFAULT 'PC' COMMENT '操作终端：PC端/移动端',
     terminal_ip VARCHAR(50) COMMENT '操作终端IP',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '变更时间',

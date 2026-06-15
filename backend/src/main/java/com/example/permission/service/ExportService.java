@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -288,12 +289,12 @@ public class ExportService {
             h1.createCell(0).setCellValue("指标"); h1.getCell(0).setCellStyle(headerStyle);
             h1.createCell(1).setCellValue("数值"); h1.getCell(1).setCellStyle(headerStyle);
             String[][] overviewData = {
-                    {"维护单总数", String.valueOf(overview.get("totalOrders"))},
-                    {"待分配数", String.valueOf(overview.get("pendingCount"))},
-                    {"处理中数", String.valueOf(overview.get("processingCount"))},
-                    {"本月维护单数", String.valueOf(overview.get("monthOrderCount"))},
-                    {"本月费用(元)", String.valueOf(overview.get("monthCost"))},
-                    {"平均处理时长(小时)", String.valueOf(overview.get("avgHours"))}
+                    {"维护单总数", safeString(overview.get("totalOrders"))},
+                    {"待分配数", safeString(overview.get("pendingCount"))},
+                    {"处理中数", safeString(overview.get("processingCount"))},
+                    {"本月维护单数", safeString(overview.get("monthOrderCount"))},
+                    {"本月费用(元)", safeString(overview.get("monthCost"))},
+                    {"平均处理时长(小时)", safeString(overview.get("avgHours"))}
             };
             for (String[] row : overviewData) {
                 Row r = sheet1.createRow(rowIdx++);
@@ -315,8 +316,8 @@ public class ExportService {
                 Row r = sheet2.createRow(rowIdx++);
                 r.createCell(0).setCellValue(rank++);
                 r.createCell(1).setCellValue(item.get("roomNumber") != null ? item.get("roomNumber").toString() : "");
-                r.createCell(2).setCellValue(item.get("maintenanceCount") != null ? Integer.parseInt(item.get("maintenanceCount").toString()) : 0);
-                r.createCell(3).setCellValue(item.get("totalCost") != null ? Double.parseDouble(item.get("totalCost").toString()) : 0);
+                r.createCell(2).setCellValue(safeInt(item.get("maintenanceCount")));
+                r.createCell(3).setCellValue(safeDouble(item.get("totalCost")));
             }
             for (int i = 0; i < topHeaders.length; i++) sheet2.autoSizeColumn(i);
 
@@ -326,11 +327,13 @@ public class ExportService {
             h3.createCell(0).setCellValue("维护类型"); h3.getCell(0).setCellStyle(headerStyle);
             h3.createCell(1).setCellValue("数量"); h3.getCell(1).setCellStyle(headerStyle);
             h3.createCell(2).setCellValue("占比"); h3.getCell(2).setCellStyle(headerStyle);
-            List<Map<String, Object>> typeList = (List<Map<String, Object>>) typeDist.get("list");
-            int total = typeDist.get("total") != null ? Integer.parseInt(typeDist.get("total").toString()) : 1;
+            List<Map<String, Object>> typeList = typeDist != null && typeDist.get("list") != null
+                    ? (List<Map<String, Object>>) typeDist.get("list") : new ArrayList<>();
+            int total = safeInt(typeDist != null ? typeDist.get("total") : null);
+            if (total <= 0) total = 1;
             for (Map<String, Object> item : typeList) {
                 Row r = sheet3.createRow(rowIdx++);
-                int count = Integer.parseInt(item.get("count").toString());
+                int count = safeInt(item.get("count"));
                 r.createCell(0).setCellValue(item.get("typeName") != null ? item.get("typeName").toString() : "");
                 r.createCell(1).setCellValue(count);
                 r.createCell(2).setCellValue(String.format("%.2f%%", total > 0 ? count * 100.0 / total : 0));
@@ -346,8 +349,8 @@ public class ExportService {
             for (Map<String, Object> item : costTrend) {
                 Row r = sheet4.createRow(rowIdx++);
                 r.createCell(0).setCellValue(item.get("month") != null ? item.get("month").toString() : "");
-                r.createCell(1).setCellValue(item.get("cost") != null ? Double.parseDouble(item.get("cost").toString()) : 0);
-                r.createCell(2).setCellValue(item.get("count") != null ? Integer.parseInt(item.get("count").toString()) : 0);
+                r.createCell(1).setCellValue(safeDouble(item.get("cost")));
+                r.createCell(2).setCellValue(safeInt(item.get("count")));
             }
             for (int i = 0; i < 3; i++) sheet4.autoSizeColumn(i);
 
@@ -357,10 +360,10 @@ public class ExportService {
             h5.createCell(0).setCellValue("指标"); h5.getCell(0).setCellStyle(headerStyle);
             h5.createCell(1).setCellValue("数值"); h5.getCell(1).setCellStyle(headerStyle);
             String[][] durationData = {
-                    {"平均处理时长(分钟)", String.valueOf(durationStats.get("avgDurationMinutes"))},
-                    {"最长处理时长(分钟)", String.valueOf(durationStats.get("maxDurationMinutes"))},
-                    {"超时单数", String.valueOf(durationStats.get("timeoutCount"))},
-                    {"超时率", String.format("%.2f%%", Double.parseDouble(durationStats.get("timeoutRate").toString()) * 100)}
+                    {"平均处理时长(分钟)", safeString(durationStats.get("avgDurationMinutes"))},
+                    {"最长处理时长(分钟)", safeString(durationStats.get("maxDurationMinutes"))},
+                    {"超时单数", safeString(durationStats.get("timeoutCount"))},
+                    {"超时率", String.format("%.2f%%", safeDouble(durationStats.get("timeoutRate")) * 100)}
             };
             for (String[] row : durationData) {
                 Row r = sheet5.createRow(rowIdx++);
@@ -381,10 +384,10 @@ public class ExportService {
                 Row r = sheet6.createRow(rowIdx++);
                 r.createCell(0).setCellValue(item.get("username") != null ? item.get("username").toString() : "");
                 r.createCell(1).setCellValue(item.get("nickname") != null ? item.get("nickname").toString() : "");
-                r.createCell(2).setCellValue(item.get("totalCount") != null ? Integer.parseInt(item.get("totalCount").toString()) : 0);
-                r.createCell(3).setCellValue(item.get("finishedCount") != null ? Integer.parseInt(item.get("finishedCount").toString()) : 0);
-                r.createCell(4).setCellValue(item.get("avgHours") != null ? Double.parseDouble(item.get("avgHours").toString()) : 0);
-                r.createCell(5).setCellValue(String.format("%.2f%%", Double.parseDouble(item.get("passRate").toString()) * 100));
+                r.createCell(2).setCellValue(safeInt(item.get("totalCount")));
+                r.createCell(3).setCellValue(safeInt(item.get("finishedCount")));
+                r.createCell(4).setCellValue(safeDouble(item.get("avgHours")));
+                r.createCell(5).setCellValue(String.format("%.2f%%", safeDouble(item.get("passRate")) * 100));
             }
             for (int i = 0; i < staffHeaders.length; i++) sheet6.autoSizeColumn(i);
 
@@ -402,5 +405,28 @@ public class ExportService {
         font.setColor(IndexedColors.GREY_50_PERCENT.getIndex());
         style.setFont(font);
         return style;
+    }
+
+    private String safeString(Object obj) {
+        if (obj == null) return "0";
+        return obj.toString();
+    }
+
+    private double safeDouble(Object obj) {
+        if (obj == null) return 0.0;
+        try {
+            return Double.parseDouble(obj.toString());
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
+    }
+
+    private int safeInt(Object obj) {
+        if (obj == null) return 0;
+        try {
+            return Integer.parseInt(obj.toString());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 }

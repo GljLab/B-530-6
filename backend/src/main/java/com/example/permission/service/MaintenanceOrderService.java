@@ -141,7 +141,7 @@ public class MaintenanceOrderService {
 
         roomChangeLogService.logRoomChange(order.getRoomId(), 5, "房间状态",
                 String.valueOf(room.getStatus()), "6",
-                "维护单创建", order.getOrderNo(),
+                "维护单创建", order.getOrderNo(), order.getId(),
                 operatorId, operatorName, operator, operatorRole, terminalIp);
 
         return order;
@@ -324,7 +324,7 @@ public class MaintenanceOrderService {
 
             roomChangeLogService.logRoomChange(order.getRoomId(), 5, "房间状态",
                     "6", "4",
-                    "维护验收通过", order.getOrderNo(),
+                    "维护验收通过", order.getOrderNo(), order.getId(),
                     operatorId, operatorName, operator, operatorRole, terminalIp);
 
             MaintenanceOrder finalOrder = order;
@@ -418,7 +418,25 @@ public class MaintenanceOrderService {
                     .from(MaintenanceStatusLog.class)
                     .where(MAINTENANCE_STATUS_LOG.ORDER_ID.eq(id))
                     .orderBy(MAINTENANCE_STATUS_LOG.CREATE_TIME.asc());
-            order.setStatusLogs(maintenanceStatusLogMapper.selectListByQuery(logQuery));
+            List<MaintenanceStatusLog> allLogs = maintenanceStatusLogMapper.selectListByQuery(logQuery);
+            order.setStatusLogs(allLogs);
+
+            order.setMaintenanceTypeName(getTypeText(order.getMaintenanceType()));
+            order.setCreatorName(order.getCreateUserName());
+
+            List<MaintenanceStatusLog> progressList = allLogs.stream()
+                    .filter(log -> log.getRemark() != null && log.getRemark().startsWith("更新进度："))
+                    .map(log -> {
+                        MaintenanceStatusLog p = new MaintenanceStatusLog();
+                        p.setId(log.getId());
+                        p.setOperatorName(log.getOperatorName());
+                        p.setCreateTime(log.getCreateTime());
+                        p.setRemark(log.getRemark().substring(6));
+                        p.setNote(log.getRemark().substring(6));
+                        return p;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            order.setProgressList(progressList);
         }
         return order;
     }

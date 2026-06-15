@@ -21,7 +21,21 @@ public class FileUploadController {
 
     private static final Logger log = LoggerFactory.getLogger(FileUploadController.class);
 
-    private static final String UPLOAD_DIR = "uploads";
+    private static final String UPLOAD_DIR;
+
+    static {
+        String appHome = System.getenv("APP_HOME");
+        if (appHome != null && !appHome.isEmpty()) {
+            UPLOAD_DIR = appHome + "/uploads";
+        } else {
+            String userDir = System.getProperty("user.dir");
+            UPLOAD_DIR = userDir + "/uploads";
+        }
+        File uploadDirFile = new File(UPLOAD_DIR);
+        if (!uploadDirFile.exists()) {
+            uploadDirFile.mkdirs();
+        }
+    }
 
     @PostMapping("/upload")
     @PreAuthorize("isAuthenticated()")
@@ -41,21 +55,25 @@ public class FileUploadController {
 
         String filename = UUID.randomUUID().toString() + extension;
 
-        String relativePath = UPLOAD_DIR + "/" + datePath;
-        File dir = new File(relativePath);
+        String fullDirPath = UPLOAD_DIR + "/" + datePath;
+        File dir = new File(fullDirPath);
         if (!dir.exists()) {
-            dir.mkdirs();
+            if (!dir.mkdirs()) {
+                log.error("创建上传目录失败: {}", fullDirPath);
+                return Result.error("上传目录创建失败");
+            }
         }
 
         File dest = new File(dir, filename);
         try {
             file.transferTo(dest);
+            log.info("文件上传成功: {}", dest.getAbsolutePath());
         } catch (IOException e) {
-            log.error("文件上传失败", e);
-            return Result.error("文件上传失败");
+            log.error("文件上传失败, 路径: {}, 错误: {}", dest.getAbsolutePath(), e.getMessage());
+            return Result.error("文件上传失败: " + e.getMessage());
         }
 
-        String url = "/" + UPLOAD_DIR + "/" + datePath + "/" + filename;
+        String url = "/uploads/" + datePath + "/" + filename;
         Map<String, String> data = new HashMap<>();
         data.put("url", url);
         return Result.success("上传成功", data);

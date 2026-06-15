@@ -135,8 +135,9 @@ docker compose logs -f
 ├── frontend/         # 前端 Vue 3 项目
 │   ├── src/
 │   │   ├── views/       # 页面组件
-│   │   │   ├── system/    # 系统管理页面
-│   │   │   └── hotel/     # 酒店管理页面
+│   │   │   ├── system/      # 系统管理页面
+│   │   │   ├── hotel/       # 酒店管理页面
+│   │   │   └── maintenance/ # 维护管理页面
 │   │   ├── router/      # 路由配置
 │   │   ├── stores/      # 状态管理
 │   │   └── api/         # API 接口

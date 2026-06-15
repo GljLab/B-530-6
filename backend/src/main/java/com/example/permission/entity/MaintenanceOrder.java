@@ -83,4 +83,13 @@ public class MaintenanceOrder {
 
     @Column(ignore = true)
     private List<MaintenanceStatusLog> statusLogs;
+
+    @Column(ignore = true)
+    private String maintenanceTypeName;
+
+    @Column(ignore = true)
+    private String creatorName;
+
+    @Column(ignore = true)
+    private List<MaintenanceStatusLog> progressList;
 }

@@ -208,7 +208,7 @@ const api = {
     getStatsCostTrend: (months) => request.get('/maintenance/statistics/costTrend', { params: { months } }),
     getStatsDuration: () => request.get('/maintenance/statistics/durationStats'),
     getStatsStaffWorkload: () => request.get('/maintenance/statistics/staffWorkload'),
-    exportMaintenanceStats: () => request.post('/maintenance/statistics/export', null, { responseType: 'blob' }),
+    exportMaintenanceStats: () => request.post('/maintenance/statistics/export', {}, { responseType: 'blob' }),
 
     getMaintenanceStaffList: () => request.get('/system/user/list', { params: { pageNum: 1, pageSize: 100, status: 1 } })
   }

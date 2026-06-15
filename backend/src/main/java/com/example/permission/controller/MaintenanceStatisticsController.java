@@ -74,7 +74,7 @@ public class MaintenanceStatisticsController {
 
     @PostMapping("/export")
     @PreAuthorize("hasAuthority('maintenance:statistics:export')")
-    public ResponseEntity<byte[]> exportStatistics() throws Exception {
+    public ResponseEntity<byte[]> exportStatistics(@RequestBody(required = false) Map<String, Object> params) throws Exception {
         String operatorName = getCurrentUserName();
         byte[] excelData = exportService.exportMaintenanceStatistics(
                 statisticsService.getOverview(),

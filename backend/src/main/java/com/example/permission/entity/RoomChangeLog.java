@@ -38,6 +38,8 @@ public class RoomChangeLog {
 
     private String relatedOrderNo;
 
+    private Long relatedOrderId;
+
     private String terminalType;
 
     private String terminalIp;

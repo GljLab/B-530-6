@@ -29,4 +29,10 @@ public class MaintenanceStatusLog {
     private String remark;
 
     private LocalDateTime createTime;
+
+    @com.mybatisflex.annotation.Column(ignore = true)
+    private String note;
+
+    @com.mybatisflex.annotation.Column(ignore = true)
+    private java.util.List<String> photos;
 }
