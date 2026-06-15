@@ -433,12 +433,12 @@ const priorityTagType = (priority) => {
 const parsePhotoUrls = (photos) => {
   if (!photos) return []
   if (Array.isArray(photos)) {
-    return photos.map(p => typeof p === 'string' ? p : (p.url || p.imageUrl || ''))
+    return photos.map(p => typeof p === 'string' ? p : (p.photoUrl || p.url || p.imageUrl || ''))
   }
   try {
     const parsed = JSON.parse(photos)
     if (Array.isArray(parsed)) {
-      return parsed.map(p => typeof p === 'string' ? p : (p.url || p.imageUrl || ''))
+      return parsed.map(p => typeof p === 'string' ? p : (p.photoUrl || p.url || p.imageUrl || ''))
     }
   } catch {
     return []
